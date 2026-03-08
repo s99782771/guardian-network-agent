@@ -1,9 +1,9 @@
+import asyncio
 import time
 
 import pyshark
 import tldextract
 
-from agent import analyze_domain
 
 
 SUSPICIOUS_TLDS = {"xyz", "top", "pw", "live", "tk"}
@@ -17,15 +17,33 @@ def is_suspicious(domain: str) -> bool:
     return ext.suffix in SUSPICIOUS_TLDS or len(domain) > 30
 
 
+def ensure_main_thread_event_loop() -> None:
+    """
+    Ensure an event loop exists for the current thread.
+
+    PyShark expects `asyncio.get_event_loop()` to succeed during LiveCapture
+    initialization. On newer Python versions (including 3.14), this raises:
+    `RuntimeError: There is no current event loop in thread 'MainThread'`
+    unless we create/set one explicitly.
+    """
+    try:
+        asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+
 def start_guardian(interface: str = "4", chunk_seconds: int = 10) -> None:
     """
     Capture DNS queries in short blocking chunks.
 
     Using capture.sniff(timeout=...) avoids pyshark's continuous async iterator path,
-    which can trigger `RuntimeError: This event loop is already running` on newer Python.
+    and pre-creating the thread event loop avoids `no current event loop` errors
+    on newer Python versions.
     """
     print(f"🚀 Guardian Agent is live on interface {interface} (listening in {chunk_seconds}s chunks)")
 
+    ensure_main_thread_event_loop()
     capture = pyshark.LiveCapture(interface=interface, display_filter="udp port 53")
 
     while True:
@@ -47,6 +65,8 @@ def start_guardian(interface: str = "4", chunk_seconds: int = 10) -> None:
                 if not is_suspicious(domain):
                     print("⏭️ Skipped (not suspicious by local heuristic)")
                     continue
+
+                from agent import analyze_domain
 
                 analysis = analyze_domain(domain)
                 print(f"🤖 AI Analysis: {analysis}")

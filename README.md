@@ -32,3 +32,7 @@ python sniffer.py
 ```
 
 The sniffer uses `capture.sniff(timeout=...)` in short chunks instead of `sniff_continuously()` to avoid asyncio event-loop conflicts seen on newer Python versions.
+
+## Troubleshooting
+
+- If you run on Python 3.14+ and see `RuntimeError: There is no current event loop in thread 'MainThread'`, update to the latest code in this repo; `sniffer.py` now creates/sets the event loop before starting `pyshark.LiveCapture`.
