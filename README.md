@@ -1,6 +1,17 @@
 # guardian-network-agent
 
-An AI-powered network security agent using PyShark and LangGraph to detect suspicious DNS activity.
+A simple packet sniffer that monitors DNS traffic on a local network and flags potentially suspicious domains.
+
+The goal of this project was to get closer to how network-level data can be captured, filtered, and turned into actionable signals.
+
+---
+
+## What it does
+
+- Captures DNS traffic (UDP port 53) using PyShark
+- Extracts queried domains in real time
+- Applies a lightweight heuristic to filter out obviously benign traffic
+- Sends potentially suspicious domains for analysis and returns a basic risk score + reason
 
 ## Prerequisites
 
